@@ -21,11 +21,11 @@ One must install or have
 
 - a working c++ build environment
 - a working python3 (3.11 or greater)
-- librtl
-- pybind11
-- numpy
-- setuptools
-- wheel
+- librtlsdr  (brew install or equivalent)
+- pybind11   (pip)
+- numpy      (pip)
+- setuptools (pip)
+- wheel      (pip)
 
 # Using it
 
