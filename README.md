@@ -27,3 +27,15 @@ One must install or have
 - setuptools
 - wheel
 
+# Using it
+
+Once installed, the package rtlsdr supplies two things, catalog and RTLSDR.
+The function catalog returns a list of rtl devices pluged into USB ports. 
+ 
+```
+from rtlsdr import catalog, RTLSDR
+
+if catalog():
+    radio = RTLSDR ()
+    help(radio)
+```
