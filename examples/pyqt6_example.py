@@ -21,8 +21,9 @@ class Radio (QtCore.QObject):
         ## NPR fm station
         self.center_freq = 88500000 
         self.radio.sample_rate = 2048000
+        self.agc = True
         self.radio.onIQData = self
-        self.radio.tuner_gain = self.radio.tuner_gains[-4]
+        #self.radio.tuner_gain = self.radio.tuner_gains[-4]
         self.pwr = np.zeros (2048,np.float32)
         self.iq = []
         self.offset = 0
@@ -57,6 +58,43 @@ class Radio (QtCore.QObject):
         self.freqs = self.freqs[1024:-1024]
         self.radio.freq = int(freq)
 
+class FrequencyDisplay (QtWidgets.QLineEdit):
+
+    def __init__(self):
+        super().__init__()
+        self.setInputMask ('9,999,999,999')
+        self.setFont (QtGui.QFont ('Arial',25))
+        self.setAlignment (Qt.AlignmentFlag.AlignHCenter)
+        self.textChanged.connect (self.onChange)
+        self.editingFinished.connect (self.onComplete)
+        policy = self.sizePolicy()
+        policy.setHorizontalPolicy (QtWidgets.QSizePolicy.Policy.Fixed)
+        self.setSizePolicy (policy)
+        self.style_done = 'color: green'
+        self.style_edit = 'color: darkred'
+
+    def keyPressEvent (self, key):
+        ## Filter out delete
+        if key.key() == 16777219 or key.key() == 16777223:
+            return
+        if key.key() == 16777220 or key.text() == '' or key.text().isdigit():
+            super().keyPressEvent (key)
+
+    def onChange (self):
+        self.setStyleSheet (self.style_edit)
+
+    def onComplete (self):
+        self.setStyleSheet (self.style_done)
+
+    def setFreq (self, freq):
+        text = str(freq)
+        text = '0' * (10-len(text)) + text
+        self.setText (text)
+        self.onComplete ()
+
+    def getFreq (self):
+        return int(self.text().replace(',',''))
+
 class Spectrum (pg.PlotWidget):
 
     def __init__ (self,radio):
@@ -76,9 +114,32 @@ class Spectrum (pg.PlotWidget):
         self.setXRange (data[0][0],data[0][-1])
         self.dataLine.setData (data[0],data[1],pen=self.pen)
 
+class MainWindow (QtWidgets.QWidget):
+
+    def __init__(self,radio):
+        super().__init__()
+        self.radio = radio
+        self.setWindowTitle (f'{radio.radio.name}:{radio.radio.serial_number}')
+        self.setLayout (QtWidgets.QVBoxLayout())
+        layout = QtWidgets.QHBoxLayout()
+        self.spec = Spectrum (radio)
+        layout.addWidget(self.spec)
+        self.layout().addLayout (layout)
+        layout = QtWidgets.QHBoxLayout ()
+        self.freq = FrequencyDisplay ()
+        layout.addWidget (QtWidgets.QWidget())
+        layout.addWidget (self.freq)
+        layout.addWidget (QtWidgets.QWidget())
+        self.layout().addLayout (layout)
+        self.freq.setFreq (self.radio.center_freq)
+        self.freq.editingFinished.connect (self.changeFreq)
+
+    def changeFreq (self):
+        self.radio.center_freq = self.freq.getFreq()
+ 
 if __name__ == '__main__':
     radio = Radio ()
-    display = Spectrum (radio)
+    display = MainWindow (radio)
     display.show()
     radio.radio.running = True
     pg.exec ()
