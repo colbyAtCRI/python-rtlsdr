@@ -171,12 +171,11 @@ void sdr_callback (void *device)
         for (int n = 0; n < nr; n += 2) {
            ret.push_back(std::complex<float>(buffer[n]/127.0f,buffer[n+1]/127.0f));
         }
-        if (true) {
-            py::gil_scoped_acquire scope;
+        py::gil_scoped_acquire scope;
             if ( !radio->mIQData.is(py::none()) ) {
                 radio->mIQData (radio->mArray(ret,radio->mComplex64_t));
             }
-        }
+        py::gil_scoped_release release;
     }
     std::cout << "thread stopped" << std::endl;
 }
